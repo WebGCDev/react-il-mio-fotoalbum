@@ -1,28 +1,29 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-async function getAllPhotos(req, res) {
+const getAllPhotos = async (req, res) => {
   try {
     const photos = await prisma.photo.findMany({
       include: {
         categories: true,
-        user: true,
       },
     });
-    res.json(photos);
+    res.status(200).json(photos);
   } catch (error) {
-    res.status(500).json({ error: 'Error retrieving photos' });
+    res.status(500).json({ error: 'Errore durante il recupero delle foto' });
   }
-}
+};
 
-async function createPhoto(req, res) {
-  if (!req.body) {
-    return res.status(400).json({ message: 'Request body is missing' });
+const createPhoto = async (req, res) => {
+  const { title, description, image, visible, categoryId } = req.body;
+
+  if (!title || !description || !image || categoryId === undefined) {
+    return res
+      .status(400)
+      .json({ message: 'Alcuni campi obbligatori sono mancanti' });
   }
 
   try {
-    const { title, description, image, categoryIds, visible, userId } =
-      req.body;
     const newPhoto = await prisma.photo.create({
       data: {
         title,
@@ -30,58 +31,53 @@ async function createPhoto(req, res) {
         image,
         visible,
         categories: {
-          connect: categoryIds.map((id) => ({ id })),
-        },
-        user: {
-          connect: { id: userId },
+          connect: { id: categoryId },
         },
       },
     });
-    res.json(newPhoto);
+    res.status(201).json(newPhoto);
   } catch (error) {
-    res.status(500).json({ error: 'Error creating photo' });
+    res.status(500).json({ error: 'Errore durante la creazione della foto' });
   }
-}
+};
 
-async function getPhotoById(req, res) {
+const getPhotoById = async (req, res) => {
   const { id } = req.params;
+
   try {
     const photo = await prisma.photo.findUnique({
-      where: {
-        id: parseInt(id),
-      },
+      where: { id: parseInt(id, 10) },
       include: {
         categories: true,
-        user: true,
       },
     });
-    if (photo) {
-      res.json(photo);
-    } else {
-      res.status(404).json({ message: 'Photo not found' });
+
+    if (!photo) {
+      return res.status(404).json({ message: 'Foto non trovata' });
     }
+
+    res.status(200).json(photo);
   } catch (error) {
-    res.status(500).json({ error: 'Error retrieving photo' });
+    res.status(500).json({ error: 'Errore durante il recupero della foto' });
   }
-}
+};
 
-async function updatePhoto(req, res) {
-  //Da Completare
-}
+const updatePhoto = async (req, res) => {
+  // Da Completare
+};
 
-async function deletePhoto(req, res) {
+const deletePhoto = async (req, res) => {
   const { id } = req.params;
+
   try {
-    const deletedPhoto = await prisma.photo.delete({
-      where: {
-        id: parseInt(id),
-      },
+    const photo = await prisma.photo.delete({
+      where: { id: parseInt(id, 10) },
     });
-    res.json(deletedPhoto);
+    res.status(200).json(photo);
   } catch (error) {
-    res.status(500).json({ error: 'Error deleting photo' });
+    res.status(500).json({ error: "Errore durante l'eliminazione della foto" });
   }
-}
+};
 
 module.exports = {
   getAllPhotos,
@@ -90,3 +86,9 @@ module.exports = {
   updatePhoto,
   deletePhoto,
 };
+
+// const photos = await prisma.photo.findMany({
+// where: {
+//     visible: true,
+// },
+//potrebbe essere utile se si vogliono filtrare solo le foto "visible"
