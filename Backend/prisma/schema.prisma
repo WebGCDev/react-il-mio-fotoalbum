@@ -37,3 +37,12 @@ model Category {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
+
+model Message {
+  id         Int      @id @unique @default(autoincrement())
+  name       String   @db.VarChar(255)
+  email      String   @db.VarChar(255)
+  message    String   @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
