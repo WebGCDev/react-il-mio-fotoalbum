@@ -1,12 +1,16 @@
-const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function register(req, res) {
-  const { username, email, password } = req.body;
-
   try {
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await prisma.user.create({
       data: {
@@ -15,25 +19,24 @@ async function register(req, res) {
         password: hashedPassword,
       },
     });
-    res.json(newUser);
+
+    res.status(201).json(newUser);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 }
 
 async function login(req, res) {
-  const { email, password } = req.body;
-
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
+    const { email, password } = req.body;
 
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid email or password' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!isPasswordValid) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
