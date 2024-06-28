@@ -1,27 +1,21 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-const getAllPhotos = async (req, res) => {
+async function getAllPhotos(req, res) {
   try {
-    const photos = await prisma.photo.findMany({
-      include: {
-        categories: true,
-      },
-    });
-    res.status(200).json(photos);
+    const photos = await prisma.photo.findMany();
+    res.json(photos);
   } catch (error) {
-    res.status(500).json({ error: 'Errore durante il recupero delle foto' });
+    res.status(500).json({ error: error.message });
   }
-};
+}
 
-const createPhoto = async (req, res) => {
+async function createPhoto(req, res) {
+  if (!req.body) {
+    return res.status(400).json({ message: 'Request body is missing' });
+  }
+
   const { title, description, image, visible, categoryId } = req.body;
-
-  if (!title || !description || !image || categoryId === undefined) {
-    return res
-      .status(400)
-      .json({ message: 'Alcuni campi obbligatori sono mancanti' });
-  }
 
   try {
     const newPhoto = await prisma.photo.create({
@@ -31,59 +25,48 @@ const createPhoto = async (req, res) => {
         image,
         visible,
         categories: {
-          connect: { id: categoryId },
+          connect: {
+            id: categoryId,
+          },
         },
       },
     });
-    res.status(201).json(newPhoto);
+    res.json(newPhoto);
   } catch (error) {
-    res.status(500).json({ error: 'Errore durante la creazione della foto' });
+    res.status(500).json({ error: error.message });
   }
-};
+}
 
-const getPhotoById = async (req, res) => {
+async function getPhotoById(req, res) {
   const { id } = req.params;
 
   try {
     const photo = await prisma.photo.findUnique({
-      where: { id: parseInt(id, 10) },
-      include: {
-        categories: true,
-      },
+      where: { id: parseInt(id) },
     });
-
-    if (!photo) {
-      return res.status(404).json({ message: 'Foto non trovata' });
-    }
-
-    res.status(200).json(photo);
+    res.json(photo);
   } catch (error) {
-    res.status(500).json({ error: 'Errore durante il recupero della foto' });
+    res.status(500).json({ error: error.message });
   }
-};
+}
 
-const updatePhoto = async (req, res) => {
-  // Da Completare
-};
-
-const deletePhoto = async (req, res) => {
+async function deletePhoto(req, res) {
   const { id } = req.params;
 
   try {
-    const photo = await prisma.photo.delete({
-      where: { id: parseInt(id, 10) },
+    const deletedPhoto = await prisma.photo.delete({
+      where: { id: parseInt(id) },
     });
-    res.status(200).json(photo);
+    res.json(deletedPhoto);
   } catch (error) {
-    res.status(500).json({ error: "Errore durante l'eliminazione della foto" });
+    res.status(500).json({ error: error.message });
   }
-};
+}
 
 module.exports = {
   getAllPhotos,
   createPhoto,
   getPhotoById,
-  updatePhoto,
   deletePhoto,
 };
 
